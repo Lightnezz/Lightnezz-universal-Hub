@@ -1,0 +1,15 @@
+local Jump = {}
+Jump.Name = "jump"
+
+function Jump.Execute(player, args)
+	local value = tonumber(args[1]) or 120
+	local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+	if hum then hum.JumpPower = value end
+end
+
+function Jump.Disable(player)
+	local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+	if hum then hum.JumpPower = 50 end
+end
+
+return Jump

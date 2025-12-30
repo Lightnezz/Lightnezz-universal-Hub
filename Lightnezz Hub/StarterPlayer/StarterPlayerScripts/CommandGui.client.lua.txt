@@ -1,0 +1,142 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local commandsFolder = ReplicatedStorage:WaitForChild("CommandModules")
+local Commands = {}
+local ActiveCommands = {}
+
+-- Load commands
+for _, module in ipairs(commandsFolder:GetChildren()) do
+	if module:IsA("ModuleScript") then
+		local cmd = require(module)
+		Commands[cmd.Name:lower()] = cmd
+		if cmd.Aliases then
+			for _, alias in ipairs(cmd.Aliases) do
+				Commands[alias:lower()] = cmd
+			end
+		end
+	end
+end
+
+-- GUI Setup
+local gui = Instance.new("ScreenGui", player.PlayerGui)
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.fromOffset(400, 400)
+frame.Position = UDim2.new(0, 50, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame)
+
+-- Shadow effect
+local shadow = Instance.new("UIStroke", frame)
+shadow.Thickness = 2
+shadow.Color = Color3.fromRGB(100,100,100)
+shadow.LineJoinMode = Enum.LineJoinMode.Round
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, -20, 0, 40)
+title.Position = UDim2.new(0, 10, 0, 10)
+title.BackgroundTransparency = 1
+title.Text = "Lightnezz Universal Beta 1.1"
+title.TextColor3 = Color3.fromRGB(200,200,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Output
+local output = Instance.new("TextLabel", frame)
+output.Size = UDim2.new(1, -20, 0, 30)
+output.Position = UDim2.new(0, 10, 0, 360)
+output.BackgroundTransparency = 1
+output.TextColor3 = Color3.fromRGB(120,200,120)
+output.Font = Enum.Font.Gotham
+output.TextSize = 14
+output.TextXAlignment = Enum.TextXAlignment.Left
+output.Text = ""
+
+-- Command TextBox
+local box = Instance.new("TextBox", frame)
+box.Size = UDim2.new(1, -20, 0, 30)
+box.Position = UDim2.new(0, 10, 0, 300)
+box.PlaceholderText = "Digite um comando..."
+box.Text = ""
+box.ClearTextOnFocus = false
+box.TextColor3 = Color3.new(1,1,1)
+box.BackgroundColor3 = Color3.fromRGB(40,40,40)
+box.Font = Enum.Font.Gotham
+box.TextSize = 14
+Instance.new("UICorner", box)
+
+-- Autocomplete suggestion
+local suggestion = Instance.new("TextLabel", frame)
+suggestion.Size = UDim2.new(1, -20, 0, 20)
+suggestion.Position = UDim2.new(0, 10, 0, 335)
+suggestion.BackgroundTransparency = 1
+suggestion.TextColor3 = Color3.fromRGB(180,180,180)
+suggestion.Font = Enum.Font.Gotham
+suggestion.TextSize = 12
+suggestion.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Helper functions
+local function parseCommand(text)
+	local args = string.split(text, " ")
+	local name = table.remove(args,1)
+	return name and name:lower(), args
+end
+
+local function updateSuggestion()
+	local txt = box.Text:lower()
+	for name, cmd in pairs(Commands) do
+		if string.sub(name,1,#txt) == txt and txt ~= "" then
+			suggestion.Text = "→ "..name
+			return
+		end
+	end
+	suggestion.Text = ""
+end
+
+local function executeCommand(name, args)
+	local cmd = Commands[name]
+	if not cmd then
+		output.Text = "✗ Comando não encontrado"
+		return
+	end
+	-- ON/OFF toggle
+	if ActiveCommands[name] then
+		if cmd.Disable then cmd.Disable(player) end
+		ActiveCommands[name] = nil
+		output.Text = "✗ Comando desativado: "..name
+	else
+		if cmd.Execute then cmd.Execute(player, args) end
+		ActiveCommands[name] = true
+		output.Text = "✓ Comando ativado: "..name
+	end
+end
+
+-- Events
+box:GetPropertyChangedSignal("Text"):Connect(updateSuggestion)
+
+box.FocusLost:Connect(function(enter)
+	if not enter then return end
+	local name, args = parseCommand(box.Text)
+	box.Text = ""
+	if name then executeCommand(name,args) end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.Tab then
+		if suggestion.Text ~= "" then
+			box.Text = string.gsub(suggestion.Text,"→ ","")
+			suggestion.Text = ""
+		end
+	end
+end)

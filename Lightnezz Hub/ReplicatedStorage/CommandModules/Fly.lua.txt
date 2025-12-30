@@ -1,0 +1,30 @@
+local Fly = {}
+Fly.Name = "fly"
+Fly.Aliases = {"f"}
+
+local RunService = game:GetService("RunService")
+local connection
+local bodyVelocity
+
+function Fly.Execute(player)
+	local char = player.Character
+	if not char then return end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	if bodyVelocity then return end
+
+	bodyVelocity = Instance.new("BodyVelocity")
+	bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
+	bodyVelocity.Parent = hrp
+
+	connection = RunService.RenderStepped:Connect(function()
+		bodyVelocity.Velocity = Vector3.new(0, 50, 0)
+	end)
+end
+
+function Fly.Disable()
+	if connection then connection:Disconnect() connection = nil end
+	if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+end
+
+return Fly

@@ -1,0 +1,14 @@
+local Sit = {}
+Sit.Name = "sit"
+
+function Sit.Execute(player)
+	local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+	if hum then hum.Sit = true end
+end
+
+function Sit.Disable(player)
+	local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+	if hum then hum.Sit = false end
+end
+
+return Sit

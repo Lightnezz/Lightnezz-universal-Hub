@@ -1,0 +1,10 @@
+local Reset = {}
+Reset.Name = reset
+Reset.Aliases = {respawn}
+
+function Reset.Execute(player)
+	playerLoadCharacter()
+end
+
+function Reset.Disable() end -- Não aplicável
+return Reset
